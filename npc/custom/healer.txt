@@ -19,8 +19,8 @@
 	.@Buffs = 1;	// Also buff players? (1: yes / 0: no)
 	.@Delay = 0;	// Heal delay, in seconds
 
-	//if (@HD > gettimetick(2))
-	//	end;
+	if (@HD > gettimetick(2))
+		end;
 	if (.@Price) {
 		message strcharinfo(0), "Healing costs " + callfunc("F_InsertComma",.@Price) + " Zeny.";
 		if (Zeny < .@Price)
@@ -30,7 +30,7 @@
 		Zeny -= .@Price;
 	}
 	specialeffect2 EF_HEAL2;
-	percentheal 105,105;
+	percentheal 100,100;
 	if (.@Buffs) {
 		specialeffect2 EF_INCAGILITY;
 		sc_start SC_INCREASEAGI,300000,10;
