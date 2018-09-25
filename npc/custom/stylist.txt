@@ -1,51 +1,166 @@
-//===== rAthena Script =======================================
-//= Stylist
-//===== By: ==================================================
-//= Euphy
-//===== Current Version: =====================================
-//= 1.1
-//===== Compatible With: =====================================
-//= rAthena Project
-//===== Description: =========================================
-//= Changes your hair style, hair color, and cloth color.
+//===== eAthena Script ======================================= 
+//= Stylist Script
+//===== By: ================================================== 
+//= eAthena Dev team
+//= Revised by Nekosume [pyRO v3.0] 
+//===== Current Version: ===================================== 
+//= 4.2
+//===== Compatible With: ===================================== 
+//= Any eAthena Version 
+//===== Description: ========================================= 
+//= Revised dye NPC
 //===== Additional Comments: =================================
-//= 1.0 Initial script.
-//= 1.1 Switched to 'getbattleflag', credits to Saithis. [Euphy]
-//============================================================
+//= v4.2 - Renamed to avoid conflict [Paradox924X]
+//= v4.1 - New hairstyles added [Mass Zero]
+//= v4.0 - Refined and Combined [Darkchild]
+//= v3.0 - Added the 'Browse' options
+//= v2.5 - Added more hair colors
+//= v2.0 - Changed palette and hair style select
+//= v1.5 - Revised script / different dialog
+//= v1.0 - Split into two NPCs
+//============================================================ 
 
-prontera,170,180,1	script	Stylist#custom_stylist	122,{
-	setarray .@Styles[1],
-		getbattleflag("max_cloth_color"),
-		getbattleflag("max_hair_style"),
-		getbattleflag("max_hair_color");
-	setarray .@Look[1],
-		LOOK_CLOTHES_COLOR,
-		LOOK_HAIR,
-		LOOK_HAIR_COLOR;
-	set .@s, select(" ~ Cloth color: ~ Hairstyle: ~ Hair color");
-	set .@Revert, getlook(.@Look[.@s]);
-	set .@Style,1;
-	while(1) {
-		setlook .@Look[.@s], .@Style;
-		message strcharinfo(0),"This is style #"+.@Style+".";
-		set .@menu$, " ~ Next (^0055FF"+((.@Style!=.@Styles[.@s])?.@Style+1:1)+"^000000): ~ Previous (^0055FF"+((.@Style!=1)?.@Style-1:.@Styles[.@s])+"^000000): ~ Jump to...: ~ Revert to original (^0055FF"+.@Revert+"^000000)";
-		switch(select(.@menu$)) {
-		case 1:
-			set .@Style, ((.@Style != .@Styles[.@s]) ? .@Style+1 : 1);
-			break;
-		case 2:
-			set .@Style, ((.@Style != 1) ? .@Style-1 : .@Styles[.@s]);
-			break;
-		case 3:
-			message strcharinfo(0),"Choose a style between 1 - "+.@Styles[.@s]+".";
-			input .@Style,0,.@Styles[.@s];
-			if (!.@Style)
-				set .@Style, rand(1,.@Styles[.@s]);
-			break;
-		case 4:
-			set .@Style, .@Revert;
-			setlook .@Look[.@s], .@Revert;
-			break;
+
+//Stylist------------------------------------------------------------------------------------------------------------
+prontera,170,180,1	script	Stylist#custom_stylist	600,{
+
+	set .@name$,"[^008000Stylist^000000]";
+	setarray .@max[1],251,251,60;		// Nr. of cloths, haircolors, hairstyles in client <===========
+	setarray .@blacklist[0],999,999,999;	// NPC will skip any cloth colors in this array <==============
+	setarray .@type[1],7,6,1;
+	set .@style,0;
+	
+	mes .@name$;
+	mes "Hola, soy tu Estilista personal y puedo cambiar tu apariencia.";
+	mes "?";
+	mes "Que deseas cambiar?";
+	next;
+	set .@s,select("^BF00FFColor de Ropa^000000",
+				"^BF0080Color de Pelo^000000",
+				"^BF0000Peinado^000000");
+	
+	mes .@name$;
+	mes "Ok, como quieres buscarlo?";
+	next;
+	menu "Empezar desde el comienzo",L_start,
+		"Elegir donde empezar",-;
+	
+	// CHOOSE WHERE TO START <=============================
+	mes .@name$;
+	mes "Ok, elige un estilo entre ^000FFF0 y " +.@max[.@s]+ "^000000.";
+	next;
+	input .@style;
+	if (.@style < 0 || .@style > .@max[.@s]) {
+		mes .@name$;
+		mes "El estilo elegido no existe.";
+		close;
+	}
+
+  L_start:
+	setarray @revert[1],getlook(.@type[.@s]),0,0;
+	mes .@name$;
+	mes "Ok, ahi vamos, comenzando desde el estilo ^007700" +.@style+ "^000000.";
+	next;
+	
+  // Beginning of style menu l00p <============================
+  L_menuloop:
+	if (.@blacklist[0]) {
+		for (set .@f,0; .@f < getarraysize(.@blacklist); set .@f,.@f+1) {
+			if (.@style == .@blacklist[.@f] && .@previous == 1 && .@s == 1) {
+				message strcharinfo(0),"GM Message - Cloth " +.@style+ " was removed.";
+				set .@style, .@style - 1;
+				goto L_menuloop;
+			} else if (.@style == .@blacklist[.@f] && .@s == 1) {
+				message strcharinfo(0),"GM Message - Cloth " +.@style+ " was removed.";
+				set .@style, .@style +1;
+				goto L_menuloop;
+			}
 		}
 	}
+	setlook .@type[.@s],.@style;
+	mes "Este es el estilo n?mero ^007700" +.@style+ "^000000.";
+	
+	set .@next, .@style + 1;
+	set .@prev, .@style - 1;
+	
+	// MAXIMUM MENU
+	if (.@style == .@max[.@s]) {
+		set .@next,0;
+		message strcharinfo(0),"Limite alcanzado";
+	}
+	
+	// Minimum Menu <=======================================
+	if (.@style == 0) {
+		set .@prev,.@max[.@s];
+		message strcharinfo(0),"Principio alcanzado";
+	}
+	
+	// Previous Menu <======================================
+	if (.@previous) {
+		menu "^FF0000Anterior - " +.@prev+ "^000000",L_prev,
+			"^0000FFSiguiente - " +.@next+ "^000000",L_next,
+			"Saltar a",L_jump,
+			"Guardar",L_save,
+			"Cargar",L_load,
+			"Salir",L_BYE;
+	}
+	
+	// Default Menu	<=======================================
+	menu "^0000FFSiguiente - " +.@next+ "^000000",L_next,
+		"^FF0000Anterior - " +.@prev+ "^000000",L_prev,
+		"Saltar a",L_jump,
+		"Guardar",L_save,
+		"Cargar",L_load,
+		"Salir",L_BYE;
+		
+  L_next:
+	set .@previous,0;
+	set .@style, .@next;
+	goto L_menuloop;
+
+  L_prev:
+	set .@previous,1;
+	set .@style, .@prev;
+	goto L_menuloop;
+	
+  L_jump:
+	next;
+	mes .@name$;
+	mes "Elige el estilo al cual deseas saltar:";
+	next;
+	input .@style;
+	if (.@style < 0 || .@style > .@max[.@s]) {
+		mes .@name$;
+		mes "El estilo elegido no existe.";
+		close;
+	}
+	goto L_menuloop;
+	
+  L_save:
+	next;
+	mes .@name$;
+	mes "Elige el espacio para guardar:";
+	set .@x, select("Slot 1 - [" +@revert[1]+ "]",
+					"Slot 2 - [" +@revert[2]+ "]",
+					"Slot 3 - [" +@revert[3]+ "]");
+					
+	setarray @revert[.@x], .@style;
+	goto L_menuloop;
+	
+  L_load:
+	next;
+	mes .@name$;
+	mes "Elige el espacio para cargar:";
+	set .@x, select("Slot 1 - [" +@revert[1]+ "]",
+					"Slot 2 - [" +@revert[2]+ "]",
+					"Slot 3 - [" +@revert[3]+ "]");
+					
+	set .@style, @revert[.@x];
+	goto L_menuloop;
+	
+	L_BYE:
+		next;
+		mes .@name$;
+		mes "Nos vemos!!";
+		close;
 }
